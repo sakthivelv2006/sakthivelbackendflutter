@@ -47,7 +47,6 @@ public class FileController {
     }
 
    
-   // Upload file (image, video, or any document)
 @PostMapping(value = "/upload", consumes = {"multipart/form-data"})
 public ResponseEntity<?> uploadFile(
         @RequestParam("file") MultipartFile file,
@@ -62,19 +61,28 @@ public ResponseEntity<?> uploadFile(
     try {
         Cloudinary cloudinary = getCloudinary();
 
-        // ✅ Always use auto so Cloudinary handles image, video, pdf etc.
-        Map<String, Object> uploadResult = cloudinary.uploader().upload(
-                file.getBytes(),
-                ObjectUtils.asMap("resource_type", "auto")
-        );
+        Map<String, Object> uploadResult;
 
-        // Save metadata
+        // ✅ Use uploadLarge for big files (>20MB), else normal upload
+        if (file.getSize() > 20 * 1024 * 1024) {
+            uploadResult = cloudinary.uploader().uploadLarge(
+                    file.getInputStream(),
+                    ObjectUtils.asMap("resource_type", "auto")
+            );
+        } else {
+            uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap("resource_type", "auto")
+            );
+        }
+
+        // ✅ Save metadata
         FileModel fileModel = new FileModel();
         fileModel.setAssetId((String) uploadResult.get("asset_id"));
         fileModel.setPublicId((String) uploadResult.get("public_id"));
         fileModel.setOriginalFilename((String) uploadResult.get("original_filename"));
         fileModel.setFormat((String) uploadResult.get("format"));
-        fileModel.setResourceType((String) uploadResult.get("resource_type")); // auto-detected
+        fileModel.setResourceType((String) uploadResult.get("resource_type")); // auto = image or video
         fileModel.setUrl((String) uploadResult.get("url"));
         fileModel.setSecureUrl((String) uploadResult.get("secure_url"));
         fileModel.setBytes(((Number) uploadResult.get("bytes")).longValue());
@@ -97,6 +105,7 @@ public ResponseEntity<?> uploadFile(
         return ResponseEntity.status(500).body("File upload failed: " + e.getMessage());
     }
 }
+
 
 
   // Get file by ID
