@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.LoginRequest;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<User> getUserById(@PathVariable String id) {
         return userRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -33,7 +34,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+    public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User userDetails) {
         return userRepository.findById(id).map(user -> {
             user.setName(userDetails.getName());
             user.setEmail(userDetails.getEmail());
@@ -44,23 +45,25 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         return userRepository.findById(id).map(user -> {
             userRepository.delete(user);
             return ResponseEntity.ok().<Void>build();
         }).orElse(ResponseEntity.notFound().build());
     }
-    @PostMapping("/login")
-public ResponseEntity<?> loginUser(@RequestBody User loginUser) {
-    return userRepository.findByEmail(loginUser.getEmail())
-            .map(user -> {
-                if(user.getPassword().equals(loginUser.getPassword())) {
-                    return ResponseEntity.ok(user); // return full user object
-                } else {
-                    return ResponseEntity.status(401).body("Invalid credentials");
-                }
-            })
-            .orElse(ResponseEntity.status(401).body("User not found"));
-}
 
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
+        return userRepository.findByEmail(loginRequest.getEmail())
+                .map(user -> {
+                    if (user.getPassword().equals(loginRequest.getPassword())) {
+                        // Remove password before sending response
+                        user.setPassword(null);
+                        return ResponseEntity.ok(user);
+                    } else {
+                        return ResponseEntity.status(401).body("{\"error\":\"Invalid credentials\"}");
+                    }
+                })
+                .orElseGet(() -> ResponseEntity.status(404).body("{\"error\":\"User not found\"}"));
+    }
 }

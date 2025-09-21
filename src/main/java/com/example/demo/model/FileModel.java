@@ -1,20 +1,20 @@
 package com.example.demo.model;
 
-import jakarta.persistence.*;
+import com.example.demo.enumclassess.Filetype;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-@Table(name = "uploaded_files")
+@Document(collection = "uploaded_files") // MongoDB collection
 public class FileModel {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id; // MongoDB ID
 
     private String assetId;
     private String publicId;
@@ -27,4 +27,14 @@ public class FileModel {
     private Integer width;
     private Integer height;
     private String signature;
+
+    private String userId; // store user reference as String (MongoDB style)
+    
+    private String description; 
+    
+    private Filetype type;
+
+    private String comments;
+    private Integer likes;
+
 }
